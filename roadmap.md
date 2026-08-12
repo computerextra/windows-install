@@ -130,6 +130,10 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Die Wortmann-Unterstützung ist geräteklassenunabhängig auszulegen: Notebook, Desktop-PC, Tablet und All-in-One müssen über denselben generischen Herstellerworkflow unterstützt werden.
 - Die Treiberermittlung für Wortmann erfolgt anhand der vom Hersteller im System hinterlegten Seriennummer. Gerätemodell oder Geräteklasse dürfen nicht als primärer Schlüssel für die Treibersuche vorausgesetzt werden.
 - Neue Logik wird grundsätzlich testbar entworfen; Hardware-, Netzwerk-, Prozess-, Registry-, WMI/CIM- und ähnliche Systemzugriffe werden so gekapselt, dass die fachliche Logik automatisiert getestet werden kann.
+- Die GUI erhält ihren initialen Ist-Zustand über einen zentralen read-only `SetupSnapshot`; GUI-Code greift nicht direkt auf CIM/WMI, Registry oder andere Windows-Systemquellen zu.
+- `SetupSnapshot` trennt Systemidentität, optionale vorhandene OEM-Gerätenummer und erkannte unterstützte Software.
+- Für Software gilt: `IsInstalled` beschreibt ausschließlich den erkannten realen Systemzustand; `IsSelectedByDefault` beschreibt die initiale GUI-Auswahl. Bereits installierte unterstützte Software wird unabhängig von den Erststart-Defaults automatisch ausgewählt dargestellt.
+- Die produktiven Windows-Quellen für Systemidentität, OEM-Gerätenummer und installierte Software werden in einer separaten read-only Infrastruktur implementiert und vor Verwendung anhand aktueller Primärquellen sowie auf realer Hardware verifiziert.
 - Für die erste Implementierungsbasis wird C# auf .NET 10 verwendet; die GUI wird mit WPF umgesetzt.
 - Lokale Entwicklung erfolgt mit .NET SDK 10.0.400 oder einem kompatiblen Patch derselben Feature-Band gemäß `global.json`.
 - MSTest.Sdk 4.1.0 ist die initiale Testplattform.
