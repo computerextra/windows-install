@@ -79,6 +79,17 @@ Diese Regeln gelten für die Weiterentwicklung dieses Repositories:
 - Neue dauerhafte Architekturentscheidungen werden in Abschnitt 3 dokumentiert.
 - Verworfene Ansätze werden dokumentiert, damit sie nicht ohne neuen technischen Grund erneut verfolgt werden.
 
+## Verbindliche Qualitäts- und Testanforderungen
+
+- Jede neu implementierte Logik erhält passende automatisierte Tests.
+- Änderungen dürfen nicht allein aufgrund erfolgreicher Kompilierung als ausreichend geprüft gelten.
+- GitHub Actions dient als verbindliches Qualitätsgate für Build, automatisierte Tests und statische Prüfungen.
+- Wo reale Windows- oder Hardwareeffekte in CI nicht direkt ausführbar sind, muss die Architektur testbare Abstraktionen verwenden, damit Entscheidungslogik, Zustandsübergänge, Fehlerfälle und externe Interaktionen automatisiert geprüft werden können.
+- Für kritische Workflows werden zusätzlich Integrations- bzw. Workflowtests mit kontrollierten Test-Doubles/Fixtures vorgesehen.
+- Ein Build, der erforderliche Tests oder Prüfungen nicht besteht, darf nicht als freizugebendes Installationsartefakt behandelt werden.
+- Praktische Hardwaretests erfolgen erst mit einem dafür geeigneten Stand auf einem frisch installierten Wortmann-Gerät.
+- Der erste reale Hardwaretest ersetzt die automatisierten Tests nicht, sondern ergänzt sie.
+
 ## Repository-Änderungen
 
 - Es wird niemals direkt durch die KI in das GitHub-Repository geschrieben, committed, gepusht oder ein Pull Request erstellt.
@@ -106,11 +117,23 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - [x] Softwareinstallationen sollen auf Deutsch erfolgen.
 - [x] Repository-Änderungen durch die KI erfolgen ausschließlich über lokale `.ps1`-Patches, nicht durch direkte GitHub-Schreibzugriffe.
 
+### Verbindliche, noch nicht praktisch abgenommene Architekturvorgaben
+
+- Das fertige Setup muss ohne vorheriges Klonen oder manuelles Herunterladen des Repositorys über einen einzelnen Startbefehl auf einem frisch installierten Windows-11-System startbar sein.
+- PowerShell ist keine vorgeschriebene Implementierungssprache. Andere geeignete Technologien sind zulässig.
+- Falls Komponenten kompiliert werden, müssen die ausführbaren Artefakte reproduzierbar über GitHub Actions gebaut werden; das Zielsystem benötigt keine lokale Entwicklungs- oder Build-Umgebung.
+- Die Herstellerintegration muss über eine erweiterbare Abstraktion erfolgen. Der zentrale Workflow darf nicht fest auf einzelne Hersteller verdrahtet werden.
+- Wortmann wird als erster Hersteller vollständig implementiert und praktisch getestet.
+- Nach Wortmann sind Lenovo, Asus und Acer als weitere Hersteller vorgesehen und müssen später als zusätzliche Implementierungen derselben Herstellerabstraktion ergänzt werden können.
+- Die Wortmann-Unterstützung ist geräteklassenunabhängig auszulegen: Notebook, Desktop-PC, Tablet und All-in-One müssen über denselben generischen Herstellerworkflow unterstützt werden.
+- Die Treiberermittlung für Wortmann erfolgt anhand der vom Hersteller im System hinterlegten Seriennummer. Gerätemodell oder Geräteklasse dürfen nicht als primärer Schlüssel für die Treibersuche vorausgesetzt werden.
+- Neue Logik wird grundsätzlich testbar entworfen; Hardware-, Netzwerk-, Prozess-, Registry-, WMI/CIM- und ähnliche Systemzugriffe werden so gekapselt, dass die fachliche Logik automatisiert getestet werden kann.
+
 ## Noch nicht entschieden
 
 Die folgenden Punkte sind bewusst noch **keine** Architekturentscheidungen und müssen vor Implementierung anhand der Anforderungen bzw. aktueller Primärquellen konkretisiert werden:
 
-- konkrete PowerShell-/GUI-Technologie
+- konkrete Implementierungssprache(n), Runtime(s) und GUI-Technologie
 - Persistenzmechanismus für die Fortsetzung nach Neustarts
 - Wortmann-Schnittstelle bzw. offizieller Mechanismus für Treibersuche und -download
 - Softwarequellen und Silent-Installationsparameter
@@ -132,28 +155,39 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 ## 4.1 Projektbasis und Ausführungsmodell
 
-- [ ] Minimalen Bootstrap-/Entry-Point festlegen und implementieren.
+- [ ] Minimalen Bootstrap-/Entry-Point für den Aufruf über einen einzelnen Befehl festlegen und implementieren.
+- [ ] Geeignete Implementierungstechnologie(n) anhand der Anforderungen auswählen; PowerShell ist eine Option, aber keine Vorgabe.
+- [ ] Download-/Startmechanismus so gestalten, dass kein vorheriges Klonen oder manuelles Herunterladen des Repositorys erforderlich ist.
+- [ ] Falls kompilierte Komponenten eingesetzt werden, GitHub-Actions-Workflow für reproduzierbare Builds und die Bereitstellung der benötigten Artefakte definieren und implementieren.
 - [ ] Voraussetzungen und unterstützte Ausführungsumgebung erkennen und validieren.
 - [ ] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
-- [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-/PowerShell-Mechanismen verifizieren und implementieren.
+- [ ] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
+- [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
 
 ### Akzeptanzkriterien
 
-- Das Setup lässt sich reproduzierbar auf einem frisch installierten Windows 11 starten.
+- Das Setup lässt sich reproduzierbar auf einem frisch installierten Windows 11 mit einem einzelnen Befehl starten.
+- Vor dem Start sind weder `git clone` noch ein manuelles Herunterladen des Projekts erforderlich.
+- Auf dem Zielsystem ist keine Entwicklungs- oder Build-Umgebung erforderlich.
+- Werden kompilierte Komponenten verwendet, stammen die ausgeführten Binärartefakte aus dem definierten GitHub-Actions-Build.
+- Automatisierte Tests für Bootstrap-/Workflowlogik, Zustandsübergänge, Fehlerbehandlung und testbar gekapselte Systemzugriffe laufen in GitHub Actions erfolgreich.
 - Fehler werden nachvollziehbar protokolliert und führen nicht zu einem stillen Abbruch.
 - Nach einem simulierten erforderlichen Neustart wird exakt der vorgesehene nächste Schritt fortgesetzt.
 - Nach vollständigem Abschluss startet das Setup nicht erneut unbeabsichtigt.
 
 ## 4.2 Systemerkennung und Herstellerabstraktion
 
-- [ ] Hersteller, Modell und relevante Geräteidentifikatoren zuverlässig ermitteln.
-- [ ] Herstellerabstraktion so anlegen, dass Wortmann zuerst implementiert und Lenovo später ergänzt werden kann.
+- [ ] Hersteller, Modell, Geräteklasse und relevante Geräteidentifikatoren zuverlässig ermitteln.
+- [ ] Herstellerabstraktion so anlegen, dass Wortmann zuerst implementiert und Lenovo, Asus sowie Acer später ohne Änderung des zentralen Workflows ergänzt werden können.
+- [ ] Herstellerabhängige Logik hinter klaren Schnittstellen kapseln und mit Test-Doubles automatisiert testbar machen.
 - [ ] Verhalten für nicht unterstützte Hersteller definieren.
 
 ### Akzeptanzkriterien
 
-- Wortmann-Systeme werden eindeutig erkannt.
+- Wortmann-Systeme werden unabhängig von der Geräteklasse eindeutig erkannt.
+- Notebook, Desktop-PC, Tablet und All-in-One durchlaufen dieselbe Herstellerabstraktion.
 - Benötigte Identifikatoren werden korrekt ausgelesen.
+- Die Herstellerabstraktion lässt sich in automatisierten Tests mit Wortmann-, Lenovo-, Asus-, Acer- und unbekannten Hersteller-Fixtures prüfen, auch wenn zunächst nur Wortmann produktiv implementiert ist.
 - Nicht unterstützte Systeme führen zu einer verständlichen Meldung statt zu falschen Treiberaktionen.
 
 ## 4.3 Wortmann-Treiberworkflow
@@ -166,7 +200,11 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 ### Akzeptanzkriterien
 
+- Die Seriennummer wird auf Wortmann-Systemen aus der vorgesehenen systemseitigen Quelle zuverlässig ausgelesen.
+- Die Treibersuche verwendet bei Wortmann die Seriennummer als primären Schlüssel.
+- Der Wortmann-Treiberworkflow enthält automatisierte Tests für gültige Seriennummern, fehlende/ungültige Seriennummern, leere Treffer, Mehrfachtreffer, Downloadfehler und Validierungsfehler.
 - Auf einem realen unterstützten Wortmann-Testsystem werden die korrekten Treiber gefunden.
+- Der reale Test darf ein Notebook, Desktop-PC, Tablet oder All-in-One sein; die Implementierung selbst darf keine dieser Geräteklassen voraussetzen oder ausschließen.
 - Downloads und Installationen schlagen bei ungültigen oder fehlenden Daten kontrolliert fehl.
 - Nach erforderlichen Neustarts wird die Installation korrekt fortgesetzt.
 - Der getestete Wortmann-Treiberworkflow ist vollständig reproduzierbar.
@@ -290,8 +328,8 @@ Solange Abschnitt 4.1 nicht praktisch abgeschlossen ist, wird nicht mit nachgela
 Der nächste technische Arbeitsschritt ist daher:
 
 1. aktuellen Repository-Stand lesen,
-2. aktuelle Primärquellen für den vorgesehenen Windows-11-/PowerShell-Ausführungsrahmen prüfen,
-3. das minimale Bootstrap-/Entry-Point-Konzept festlegen,
+2. aktuelle Primärquellen für die in Frage kommenden Windows-11-Ausführungs-, Deployment- und Testtechnologien prüfen,
+3. geeignete Implementierungstechnologie(n), Testarchitektur und das minimale Einzeiler-Bootstrap-/Entry-Point-Konzept festlegen,
 4. erst danach einen defensiven `.ps1`-Patch für dessen Implementierung erstellen,
 5. praktisch testen,
 6. anschließend erst die zugehörigen Roadmap-Punkte als `[x]` markieren.
