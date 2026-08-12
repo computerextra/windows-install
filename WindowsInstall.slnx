@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WindowsInstall.App/WindowsInstall.App.csproj" />
+    <Project Path="src/WindowsInstall.Core/WindowsInstall.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WindowsInstall.Core.Tests/WindowsInstall.Core.Tests.csproj" />
+  </Folder>
+</Solution>

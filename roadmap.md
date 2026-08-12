@@ -89,6 +89,8 @@ Diese Regeln gelten für die Weiterentwicklung dieses Repositories:
 - Ein Build, der erforderliche Tests oder Prüfungen nicht besteht, darf nicht als freizugebendes Installationsartefakt behandelt werden.
 - Praktische Hardwaretests erfolgen erst mit einem dafür geeigneten Stand auf einem frisch installierten Wortmann-Gerät.
 - Der erste reale Hardwaretest ersetzt die automatisierten Tests nicht, sondern ergänzt sie.
+- Lokale Tests auf dem Windows-Entwicklungsrechner sind ausdrücklich vorgesehen, solange sie keine persistenten Systemänderungen auslösen.
+- Die GUI darf lokal vollständig gestartet und geprüft werden, sofern sie im Entwicklungsmodus ausschließlich nicht-mutuierende bzw. simulierte Backends verwendet.
 
 ## Repository-Änderungen
 
@@ -128,6 +130,10 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Die Wortmann-Unterstützung ist geräteklassenunabhängig auszulegen: Notebook, Desktop-PC, Tablet und All-in-One müssen über denselben generischen Herstellerworkflow unterstützt werden.
 - Die Treiberermittlung für Wortmann erfolgt anhand der vom Hersteller im System hinterlegten Seriennummer. Gerätemodell oder Geräteklasse dürfen nicht als primärer Schlüssel für die Treibersuche vorausgesetzt werden.
 - Neue Logik wird grundsätzlich testbar entworfen; Hardware-, Netzwerk-, Prozess-, Registry-, WMI/CIM- und ähnliche Systemzugriffe werden so gekapselt, dass die fachliche Logik automatisiert getestet werden kann.
+- Für die erste Implementierungsbasis wird C# auf .NET 10 verwendet; die GUI wird mit WPF umgesetzt.
+- Lokale Entwicklung erfolgt mit .NET SDK 10.0.400 oder einem kompatiblen Patch derselben Feature-Band gemäß `global.json`.
+- MSTest.Sdk 4.1.0 ist die initiale Testplattform.
+- Lokale Builds, automatisierte Tests und die GUI dürfen auf dem Entwicklungsrechner ausgeführt werden. Persistente Windows-Systemänderungen sind dort nicht zulässig und müssen durch eine explizite Entwicklungs-Sicherheitsgrenze blockiert werden.
 
 ## Noch nicht entschieden
 
