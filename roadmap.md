@@ -150,7 +150,10 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Nach erfolgreichem Abschluss dürfen keine WindowsInstall-EXE, Bootstrap-Dateien, Downloads, Installer, Archive, Logs, temporären Dateien, Resume-Dateien, Scheduled Tasks oder sonstige nur für WindowsInstall angelegte Laufzeitartefakte zurückbleiben.
 - Nach erfolgreichem Abschluss dürfen vom WindowsInstall-Projekt ausschließlich die definierten Markerdateien direkt unter `C:\` verbleiben; bewusst installierte Software, Treiber und Windows-/OEM-Konfigurationen sind davon ausgenommen.
 - Ein späterer erneuter Start erfolgt wieder über den Einzeiler/Bootstrap, lädt die aktuelle Anwendung neu, liest die Markerdateien und den realen Systemzustand, führt nur erforderliche Schritte aus und entfernt sich anschließend wieder vollständig.
-- Der konkrete Dateiname, das Schema, die Versionierung und die Integritätsregeln der Marker sowie der technisch zuverlässige Self-Cleanup-Mechanismus werden vor Implementierung dokumentiert und getestet.
+- Für die initiale Markerarchitektur wird genau eine versteckte, projektspezifische JSON-Markerdatei `C:\ComputerExtra.WindowsInstall.marker.json` verwendet; sie enthält mehrere versionierte Workflow-Marker.
+- Jeder gerätegebundene Workflow-Marker enthält mindestens Schema-Version, Workflow-ID, Abschlusszeitpunkt, Installer-Version, Hersteller und Geräteseriennummer.
+- Gerätegebundene Marker sind nur gültig, wenn Schema-Version, Hersteller und Seriennummer zum aktuell erkannten Gerät passen; bei Abweichung gilt der Marker nicht als Nachweis eines abgeschlossenen Workflows.
+- Der technisch zuverlässige Dateischreib-, Hidden-Attribute-, Integritäts- und Self-Cleanup-Mechanismus wird erst in der produktiven Windows-Infrastruktur implementiert und praktisch getestet.
 
 ## Noch nicht entschieden
 
