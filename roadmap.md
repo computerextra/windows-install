@@ -134,6 +134,16 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Lokale Entwicklung erfolgt mit .NET SDK 10.0.400 oder einem kompatiblen Patch derselben Feature-Band gemäß `global.json`.
 - MSTest.Sdk 4.1.0 ist die initiale Testplattform.
 - Lokale Builds, automatisierte Tests und die GUI dürfen auf dem Entwicklungsrechner ausgeführt werden. Persistente Windows-Systemänderungen sind dort nicht zulässig und müssen durch eine explizite Entwicklungs-Sicherheitsgrenze blockiert werden.
+- Der aktuelle Computername wird beim Öffnen der GUI automatisch aus dem System gelesen und als vorbelegter Wert angezeigt.
+- Die Gerätenummer für OEM-Informationen ist optional.
+- Wenn keine Gerätenummer angegeben ist, werden keine OEM-Informationen geschrieben oder verändert.
+- Wenn bereits eine Gerätenummer in den vorgesehenen OEM-Informationen hinterlegt ist, wird sie beim Öffnen der GUI automatisch ausgelesen und vorbelegt.
+- Bei erneutem Start der GUI muss der bestehende Systemzustand berücksichtigt werden: bereits installierte Software wird erkannt und in der GUI automatisch als ausgewählt dargestellt.
+- Bei erneutem Start muss nachvollziehbar sein, ob der Treiberworkflow bereits erfolgreich durchgeführt wurde.
+- Wird bei einem späteren erneuten Lauf erstmals eine Gerätenummer angegeben, werden die OEM-Informationen in diesem Lauf geschrieben, ohne bereits erfolgreich abgeschlossene andere Schritte unnötig erneut auszuführen.
+- Unsichtbare, projektspezifische Marker dürfen verwendet werden, um vom Installer selbst abgeschlossene Workflow-Schritte nachvollziehbar zu machen.
+- Marker sind nicht die alleinige Wahrheitsquelle für tatsächlich vorhandene Software oder sichtbare OEM-Daten: installierte Software und bereits vorhandene OEM-Informationen müssen soweit technisch zuverlässig möglich aus dem realen Systemzustand erkannt werden.
+- Der konkrete Speicherort, das Schema, die Versionierung und die Integritätsregeln für Marker werden vor Implementierung anhand geeigneter Windows-Mechanismen festgelegt und dokumentiert.
 
 ## Noch nicht entschieden
 
@@ -169,6 +179,8 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [ ] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
 - [ ] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
 - [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
+- [ ] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
+- [ ] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
 
 ### Akzeptanzkriterien
 
@@ -218,29 +230,44 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 ## 4.4 Initiale GUI und Eingabemodell
 
 - [ ] GUI-Technologie festlegen.
+- [ ] Aktuellen Computernamen beim Öffnen der GUI auslesen und als vorbelegten Wert anzeigen.
 - [ ] Eingabe des gewünschten Computernamens integrieren.
-- [ ] Eingabe der Gerätenummer für OEM-Informationen integrieren.
-- [ ] Softwareauswahl mit den definierten Standardwerten integrieren.
+- [ ] Optionale Eingabe der Gerätenummer für OEM-Informationen integrieren.
+- [ ] Bereits vorhandene Gerätenummer aus den vorgesehenen OEM-Informationen auslesen und in der GUI vorbelegen.
+- [ ] Bereits installierte Software zuverlässig erkennen und die zugehörigen Auswahlfelder automatisch aktivieren.
+- [ ] Bereits erfolgreich abgeschlossene Treiberinstallation über Systemzustand und/oder projektspezifischen Workflow-Marker nachvollziehen.
+- [ ] Softwareauswahl mit den definierten Standardwerten integrieren, wobei erkannter Ist-Zustand Vorrang vor Erststart-Defaults hat.
 - [ ] Eingaben validieren und als zentralen Setup-Zustand bereitstellen.
 
 ### Akzeptanzkriterien
 
-- Vorausgewählt sind Adobe Reader, Google Chrome und 7-Zip.
+- Beim ersten Start zeigt das Feld für den Computernamen den aktuell auf dem System gesetzten Computernamen an.
+- Vorausgewählt sind bei einem Erstlauf Adobe Reader, Google Chrome und 7-Zip, sofern der erkannte Ist-Zustand keine abweichende Darstellung erfordert.
 - Optional auswählbar sind Firefox, Thunderbird, Office 365, G Data Anti Virus / Internet Security / Total Protection und G Data MES Client.
+- Bereits installierte unterstützte Software wird bei erneutem Start erkannt und automatisch als ausgewählt dargestellt.
+- Eine bereits vorhandene Gerätenummer wird aus den OEM-Informationen gelesen und automatisch in der GUI angezeigt.
+- Ein leeres Gerätenummernfeld ist gültig und führt nicht zum Schreiben oder Verändern von OEM-Informationen.
+- Wird bei einem späteren Lauf eine Gerätenummer ergänzt, kann ausschließlich der dafür erforderliche OEM-Schritt nachgeholt werden, ohne bereits abgeschlossene unabhängige Schritte zwangsweise erneut auszuführen.
+- Der Status einer bereits abgeschlossenen Treiberinstallation kann bei erneutem Start nachvollzogen werden.
 - Ungültige Eingaben verhindern den Start der eigentlichen Installation mit verständlicher Rückmeldung.
-- Die erfassten Werte stehen allen nachfolgenden Schritten konsistent zur Verfügung.
+- Die erfassten und erkannten Werte stehen allen nachfolgenden Schritten konsistent zur Verfügung.
 
 ## 4.5 Computername und OEM-Informationen
 
-- [ ] Computernamen validieren und setzen.
+- [ ] Computernamen validieren und nur bei tatsächlicher Änderung setzen.
 - [ ] OEM-Felder und deren Quellen verbindlich definieren.
-- [ ] Hersteller, Gerätenummer, Supportinformationen und weitere definierte OEM-Daten setzen.
+- [ ] Vorhandene OEM-Gerätenummer zuverlässig auslesen.
+- [ ] Hersteller, Gerätenummer, Supportinformationen und weitere definierte OEM-Daten nur dann setzen, wenn eine Gerätenummer angegeben ist.
+- [ ] Verhalten für einen später nachgeholten OEM-Schreibvorgang nach bereits abgeschlossenem Hauptworkflow implementieren.
 - [ ] Neustartbedarf über das zentrale Fortsetzungsmodell behandeln.
 
 ### Akzeptanzkriterien
 
-- Der gewünschte Computername ist nach Abschluss aktiv.
-- Die festgelegten OEM-Informationen werden an den vorgesehenen Windows-Stellen korrekt angezeigt.
+- Der gewünschte Computername ist nach Abschluss aktiv; ist er unverändert, wird keine unnötige Umbenennung ausgelöst.
+- Ohne eingegebene Gerätenummer werden keine OEM-Informationen geschrieben oder verändert.
+- Mit eingegebener Gerätenummer werden die festgelegten OEM-Informationen an den vorgesehenen Windows-Stellen korrekt angezeigt.
+- Eine bereits vorhandene Gerätenummer kann bei erneutem Start zuverlässig ausgelesen werden.
+- Eine später ergänzte Gerätenummer kann die OEM-Informationen nachtragen, ohne bereits erfolgreich abgeschlossene unabhängige Installationsschritte erneut auszuführen.
 - Ein erforderlicher Neustart unterbricht den Workflow nicht.
 
 ## 4.6 Softwareinstallation
