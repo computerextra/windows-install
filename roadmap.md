@@ -143,7 +143,14 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Wird bei einem späteren erneuten Lauf erstmals eine Gerätenummer angegeben, werden die OEM-Informationen in diesem Lauf geschrieben, ohne bereits erfolgreich abgeschlossene andere Schritte unnötig erneut auszuführen.
 - Unsichtbare, projektspezifische Marker dürfen verwendet werden, um vom Installer selbst abgeschlossene Workflow-Schritte nachvollziehbar zu machen.
 - Marker sind nicht die alleinige Wahrheitsquelle für tatsächlich vorhandene Software oder sichtbare OEM-Daten: installierte Software und bereits vorhandene OEM-Informationen müssen soweit technisch zuverlässig möglich aus dem realen Systemzustand erkannt werden.
-- Der konkrete Speicherort, das Schema, die Versionierung und die Integritätsregeln für Marker werden vor Implementierung anhand geeigneter Windows-Mechanismen festgelegt und dokumentiert.
+- Markerdateien werden direkt im Root von `C:\` gespeichert; es wird dafür kein eigenes WindowsInstall-Verzeichnis angelegt.
+- Die Markerdateien müssen eindeutig namensraumartig benannt sein, damit sie dem Projekt zuverlässig zugeordnet werden können und nicht mit fremden Dateien kollidieren.
+- Nach erfolgreichem Abschluss muss sich WindowsInstall vollständig selbst entfernen.
+- Nach erfolgreichem Abschluss dürfen keine WindowsInstall-Verzeichnisse zurückbleiben.
+- Nach erfolgreichem Abschluss dürfen keine WindowsInstall-EXE, Bootstrap-Dateien, Downloads, Installer, Archive, Logs, temporären Dateien, Resume-Dateien, Scheduled Tasks oder sonstige nur für WindowsInstall angelegte Laufzeitartefakte zurückbleiben.
+- Nach erfolgreichem Abschluss dürfen vom WindowsInstall-Projekt ausschließlich die definierten Markerdateien direkt unter `C:\` verbleiben; bewusst installierte Software, Treiber und Windows-/OEM-Konfigurationen sind davon ausgenommen.
+- Ein späterer erneuter Start erfolgt wieder über den Einzeiler/Bootstrap, lädt die aktuelle Anwendung neu, liest die Markerdateien und den realen Systemzustand, führt nur erforderliche Schritte aus und entfernt sich anschließend wieder vollständig.
+- Der konkrete Dateiname, das Schema, die Versionierung und die Integritätsregeln der Marker sowie der technisch zuverlässige Self-Cleanup-Mechanismus werden vor Implementierung dokumentiert und getestet.
 
 ## Noch nicht entschieden
 
@@ -180,6 +187,9 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [ ] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
 - [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
 - [ ] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
+- [ ] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
+- [ ] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
+- [ ] Self-Cleanup-Modell entwerfen und implementieren, das nach erfolgreichem Abschluss Anwendung, Bootstrap, Downloads, Logs, Resume-State, temporäre Verzeichnisse und sonstige WindowsInstall-Laufzeitartefakte vollständig entfernt.
 - [ ] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
 
 ### Akzeptanzkriterien
@@ -192,6 +202,10 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - Fehler werden nachvollziehbar protokolliert und führen nicht zu einem stillen Abbruch.
 - Nach einem simulierten erforderlichen Neustart wird exakt der vorgesehene nächste Schritt fortgesetzt.
 - Nach vollständigem Abschluss startet das Setup nicht erneut unbeabsichtigt.
+- Nach erfolgreichem Abschluss existieren keine WindowsInstall-Verzeichnisse mehr auf dem System.
+- Nach erfolgreichem Abschluss existieren keine ausführbaren WindowsInstall-Dateien, Bootstrap-Dateien, Downloads, Logs, Resume-Dateien, temporären Dateien oder sonstige WindowsInstall-Laufzeitartefakte mehr.
+- Ausschließlich die definierten Markerdateien direkt unter `C:\` bleiben erhalten.
+- Ein erneuter späterer Einzeiler-Aufruf kann anhand der Markerdateien und des realen Systemzustands korrekt entscheiden, welche Schritte bereits erledigt sind und welche noch ausgeführt werden müssen.
 
 ## 4.2 Systemerkennung und Herstellerabstraktion
 
@@ -342,6 +356,9 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [ ] Verhalten bei Teilfehlern und Wiederaufnahme verbindlich festlegen.
 - [ ] Abschlusszustand dauerhaft markieren.
 - [ ] Temporäre Dateien und nur für den Lauf benötigte Zustände kontrolliert bereinigen.
+- [ ] Vollständige Selbstlöschung aller WindowsInstall-Programmdateien und Laufzeitartefakte nach erfolgreichem Abschluss sicherstellen.
+- [ ] Sicherstellen, dass keine WindowsInstall-Verzeichnisse zurückbleiben.
+- [ ] Sicherstellen, dass ausschließlich die definierten Markerdateien direkt unter `C:\` von der Abschlussbereinigung ausgenommen bleiben.
 - [ ] Vollständigen End-to-End-Test auf einem frisch installierten Windows-11-Testsystem durchführen.
 
 ### Akzeptanzkriterien
@@ -350,6 +367,8 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - Notwendige Windows-Neustarts werden automatisch durchgeführt und korrekt fortgesetzt.
 - Nach Abschluss werden die definierten Ergebnisse nachvollziehbar ausgegeben.
 - Ein bereits erfolgreich abgeschlossenes Setup startet nicht versehentlich erneut.
+- Nach dem erfolgreichen End-to-End-Lauf bleiben keine WindowsInstall-Programmdateien, Verzeichnisse, Downloads, Logs, Resume-Artefakte oder sonstigen Laufzeitdaten zurück.
+- Ausschließlich die definierten Markerdateien direkt unter `C:\` bleiben erhalten und ermöglichen einen späteren erneuten Einzeiler-Aufruf mit korrekter Zustandserkennung.
 - Alle zuvor als `[x]` markierten Teilkomponenten bleiben im Gesamttest funktionsfähig.
 
 ---
