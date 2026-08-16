@@ -6,6 +6,8 @@ Lies **vor jeder Arbeit zuerst das Repository und vollständig die aktuelle `roa
 
 ## Verbindliche Regeln
 
+Bei diesem Projekt niemals Bilder generieren oder Bildbearbeitung verwenden, außer ich fordere ausdrücklich eine Bildgenerierung an. Screenshots dienen ausschließlich der Analyse. Bei Code-Arbeit zuerst den aktuellen Stand des relevanten GitHub-Repositories einlesen. Keine erfundenen Dateien, Marker oder Strukturen. Bestehende funktionierende Logik nicht ohne Grund ändern. Änderungen klein und gezielt halten. Erst lokal testen, dann committen/pushen. Antworten kurz und direkt halten.
+
 Die `roadmap.md` ist für diese Unterhaltung die **verbindliche Source of Truth und Arbeitsanweisung**.
 
 Alle darin dokumentierten Regeln, Architekturentscheidungen, Workflows, Konventionen, bereits getroffenen Entscheidungen, verworfenen Ansätze und Akzeptanzkriterien sind als feste Vorgaben zu behandeln.
