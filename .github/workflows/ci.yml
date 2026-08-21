@@ -30,9 +30,11 @@ jobs:
       - name: Test
         run: dotnet test WindowsInstall.slnx --configuration Release --no-build
 
-      - name: Bootstrap smoke test
+      - name: Bootstrap environment and smoke tests
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Stop'
+
           $fixtureDirectory = Join-Path $env:RUNNER_TEMP 'WindowsInstallBootstrapFixture'
           New-Item -ItemType Directory -Path $fixtureDirectory -Force | Out-Null
 
@@ -45,4 +47,94 @@ jobs:
           $assetUri = [Uri]$fixtureAsset
           $checksumUri = [Uri]$fixtureChecksum
 
-          & .\bootstrap.ps1 -AssetUri $assetUri -ChecksumUri $checksumUri -NoLaunch
+          function global:Get-CimInstance {
+            param(
+              [Parameter(Mandatory)]
+              [string]$ClassName
+            )
+
+            switch ($ClassName) {
+              'Win32_OperatingSystem' {
+                return $global:WindowsInstallTestOperatingSystem
+              }
+              'Win32_Processor' {
+                return $global:WindowsInstallTestProcessors
+              }
+              default {
+                throw "Unerwartete CIM-Klasse im Bootstrap-Test: $ClassName"
+              }
+            }
+          }
+
+          function Assert-BootstrapEnvironmentFails {
+            param(
+              [Parameter(Mandatory)]
+              [string]$Version,
+
+              [Parameter(Mandatory)]
+              [uint32]$ProductType,
+
+              [Parameter(Mandatory)]
+              [uint16]$Architecture,
+
+              [Parameter(Mandatory)]
+              [string]$ExpectedMessage
+            )
+
+            $global:WindowsInstallTestOperatingSystem = [PSCustomObject]@{
+              Version = $Version
+              ProductType = $ProductType
+            }
+            $global:WindowsInstallTestProcessors = @(
+              [PSCustomObject]@{
+                Architecture = $Architecture
+              }
+            )
+
+            try {
+              & .\bootstrap.ps1 `
+                -AssetUri $assetUri `
+                -ChecksumUri $checksumUri `
+                -NoLaunch
+
+              throw 'Bootstrap hat eine nicht unterstützte Umgebung akzeptiert.'
+            }
+            catch {
+              if ($_.Exception.Message -notlike "*$ExpectedMessage*") {
+                throw
+              }
+            }
+          }
+
+          Assert-BootstrapEnvironmentFails `
+            -Version '10.0.19045.0' `
+            -ProductType 1 `
+            -Architecture 9 `
+            -ExpectedMessage 'Windows 11 Client'
+
+          Assert-BootstrapEnvironmentFails `
+            -Version '10.0.26100.0' `
+            -ProductType 3 `
+            -Architecture 9 `
+            -ExpectedMessage 'Windows 11 Client'
+
+          Assert-BootstrapEnvironmentFails `
+            -Version '10.0.26100.0' `
+            -ProductType 1 `
+            -Architecture 12 `
+            -ExpectedMessage 'Windows 11 x64'
+
+          $global:WindowsInstallTestOperatingSystem = [PSCustomObject]@{
+            Version = '10.0.26100.0'
+            ProductType = 1
+          }
+          $global:WindowsInstallTestProcessors = @(
+            [PSCustomObject]@{
+              Architecture = 9
+            }
+          )
+
+          & .\bootstrap.ps1 `
+            -AssetUri $assetUri `
+            -ChecksumUri $checksumUri `
+            -NoLaunch

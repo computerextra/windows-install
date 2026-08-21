@@ -34,6 +34,8 @@ jobs:
       - name: Bootstrap smoke test
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Stop'
+
           $fixtureDirectory = Join-Path $env:RUNNER_TEMP 'WindowsInstallBootstrapFixture'
           New-Item -ItemType Directory -Path $fixtureDirectory -Force | Out-Null
 
@@ -46,7 +48,39 @@ jobs:
           $assetUri = [Uri]$fixtureAsset
           $checksumUri = [Uri]$fixtureChecksum
 
-          & .\bootstrap.ps1 -AssetUri $assetUri -ChecksumUri $checksumUri -NoLaunch
+          $global:WindowsInstallTestOperatingSystem = [PSCustomObject]@{
+            Version = '10.0.26100.0'
+            ProductType = 1
+          }
+          $global:WindowsInstallTestProcessors = @(
+            [PSCustomObject]@{
+              Architecture = 9
+            }
+          )
+
+          function global:Get-CimInstance {
+            param(
+              [Parameter(Mandatory)]
+              [string]$ClassName
+            )
+
+            switch ($ClassName) {
+              'Win32_OperatingSystem' {
+                return $global:WindowsInstallTestOperatingSystem
+              }
+              'Win32_Processor' {
+                return $global:WindowsInstallTestProcessors
+              }
+              default {
+                throw "Unerwartete CIM-Klasse im Bootstrap-Test: $ClassName"
+              }
+            }
+          }
+
+          & .\bootstrap.ps1 `
+            -AssetUri $assetUri `
+            -ChecksumUri $checksumUri `
+            -NoLaunch
 
       - name: Restore publish runtime
         run: dotnet restore src/WindowsInstall.App/WindowsInstall.App.csproj --runtime win-x64

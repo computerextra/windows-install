@@ -18,6 +18,87 @@ if ($env:OS -ne 'Windows_NT') {
     throw 'WindowsInstall kann nur unter Windows ausgeführt werden.'
 }
 
+function Get-WindowsInstallEnvironment {
+    $operatingSystem = Get-CimInstance `
+        -ClassName Win32_OperatingSystem `
+        -ErrorAction Stop
+
+    $processors = @(
+        Get-CimInstance `
+            -ClassName Win32_Processor `
+            -ErrorAction Stop
+    )
+
+    if ($null -eq $operatingSystem) {
+        throw 'Windows-Version konnte nicht ermittelt werden.'
+    }
+
+    if ($processors.Count -eq 0) {
+        throw 'Prozessorarchitektur konnte nicht ermittelt werden.'
+    }
+
+    $operatingSystemVersion = $null
+
+    if (-not [Version]::TryParse(
+        [string]$operatingSystem.Version,
+        [ref]$operatingSystemVersion)) {
+        throw "Ungültige Windows-Version erkannt: $($operatingSystem.Version)"
+    }
+
+    [PSCustomObject]@{
+        Version = $operatingSystemVersion
+        ProductType = [uint32]$operatingSystem.ProductType
+        ProcessorArchitectures = [uint16[]]@(
+            $processors |
+                ForEach-Object {
+                    [uint16]$_.Architecture
+                }
+        )
+    }
+}
+
+function Assert-WindowsInstallEnvironment {
+    param(
+        [Parameter(Mandatory)]
+        [PSCustomObject]$Environment
+    )
+
+    $minimumWindows11Version = [Version]'10.0.22000.0'
+
+    if (
+        $Environment.ProductType -ne 1 -or
+        $Environment.Version -lt $minimumWindows11Version
+    ) {
+        throw (
+            'Nicht unterstütztes Betriebssystem. ' +
+            'WindowsInstall benötigt Windows 11 Client. ' +
+            "Erkannt: Version $($Environment.Version), " +
+            "ProductType $($Environment.ProductType)."
+        )
+    }
+
+    $unsupportedArchitectures = @(
+        $Environment.ProcessorArchitectures |
+            Where-Object {
+                $_ -ne 9
+            }
+    )
+
+    if ($unsupportedArchitectures.Count -gt 0) {
+        $detectedArchitectures =
+            ($Environment.ProcessorArchitectures -join ', ')
+
+        throw (
+            'Nicht unterstützte Prozessorarchitektur. ' +
+            'WindowsInstall benötigt Windows 11 x64. ' +
+            "Erkannte Architekturwerte: $detectedArchitectures."
+        )
+    }
+}
+
+$windowsInstallEnvironment = Get-WindowsInstallEnvironment
+Assert-WindowsInstallEnvironment -Environment $windowsInstallEnvironment
+
 function Receive-File {
     param(
         [Parameter(Mandatory)]
