@@ -158,6 +158,10 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Jeder gerätegebundene Workflow-Marker enthält mindestens Schema-Version, Workflow-ID, Abschlusszeitpunkt, Installer-Version, Hersteller und Geräteseriennummer.
 - Gerätegebundene Marker sind nur gültig, wenn Schema-Version, Hersteller und Seriennummer zum aktuell erkannten Gerät passen; bei Abweichung gilt der Marker nicht als Nachweis eines abgeschlossenen Workflows.
 - Der technisch zuverlässige Dateischreib-, Hidden-Attribute-, Integritäts- und Self-Cleanup-Mechanismus wird erst in der produktiven Windows-Infrastruktur implementiert und praktisch getestet.
+- Der minimale Bootstrap wird als Windows-PowerShell-5.1-Skript ausgeführt, damit auf einem frisch installierten Windows 11 keine zusätzliche PowerShell-Version vorausgesetzt werden muss.
+- Der Bootstrap lädt das aktuelle `win-x64`-Release-Artefakt und die zugehörige SHA-256-Prüfsumme von GitHub Releases, validiert das Binärartefakt vor dem Start und verwendet ausschließlich temporären Runtime-Speicher.
+- Die WPF-Anwendung wird für das Zielsystem als self-contained .NET-10-Single-File-Artefakt veröffentlicht; auf dem Zielsystem ist dadurch keine lokale .NET-Runtime oder Build-Umgebung erforderlich.
+- GitHub Actions ist der verbindliche Build- und Release-Weg: CI prüft Restore, Build, automatisierte Tests und den Bootstrap-Smoke-Test; Tags nach dem Schema `v*` erzeugen das geprüfte Release-Artefakt samt SHA-256-Datei.
 
 ## Noch nicht entschieden
 
@@ -185,10 +189,10 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 ## 4.1 Projektbasis und Ausführungsmodell
 
-- [ ] Minimalen Bootstrap-/Entry-Point für den Aufruf über einen einzelnen Befehl festlegen und implementieren.
-- [ ] Geeignete Implementierungstechnologie(n) anhand der Anforderungen auswählen; PowerShell ist eine Option, aber keine Vorgabe.
-- [ ] Download-/Startmechanismus so gestalten, dass kein vorheriges Klonen oder manuelles Herunterladen des Repositorys erforderlich ist.
-- [ ] Falls kompilierte Komponenten eingesetzt werden, GitHub-Actions-Workflow für reproduzierbare Builds und die Bereitstellung der benötigten Artefakte definieren und implementieren.
+- [x] Minimalen Bootstrap-/Entry-Point für den Aufruf über einen einzelnen Befehl festlegen und implementieren.
+- [x] Geeignete Implementierungstechnologie(n) anhand der Anforderungen auswählen; PowerShell ist eine Option, aber keine Vorgabe.
+- [x] Download-/Startmechanismus so gestalten, dass kein vorheriges Klonen oder manuelles Herunterladen des Repositorys erforderlich ist.
+- [x] Falls kompilierte Komponenten eingesetzt werden, GitHub-Actions-Workflow für reproduzierbare Builds und die Bereitstellung der benötigten Artefakte definieren und implementieren.
 - [ ] Voraussetzungen und unterstützte Ausführungsumgebung erkennen und validieren.
 - [ ] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
 - [ ] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
