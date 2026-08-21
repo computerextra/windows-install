@@ -10,6 +10,8 @@ public sealed class ManufacturerIntegrationResolverTests
     [DataRow("LENOVO", ManufacturerId.Lenovo)]
     [DataRow("ASUSTeK COMPUTER INC.", ManufacturerId.Asus)]
     [DataRow("Acer", ManufacturerId.Acer)]
+    [DataRow("SCHENKER TECHNOLOGIES GMBH", ManufacturerId.Schenker)]
+    [DataRow("XMG", ManufacturerId.Xmg)]
     public void Resolve_SelectsMatchingIntegration(
         string manufacturer,
         ManufacturerId expectedManufacturer)

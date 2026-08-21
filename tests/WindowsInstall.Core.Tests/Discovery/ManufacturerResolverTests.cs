@@ -11,6 +11,10 @@ public sealed class ManufacturerResolverTests
     [DataRow("ASUSTeK COMPUTER INC.", ManufacturerId.Asus)]
     [DataRow("ASUS", ManufacturerId.Asus)]
     [DataRow("Acer", ManufacturerId.Acer)]
+    [DataRow("SCHENKER TECHNOLOGIES GMBH", ManufacturerId.Schenker)]
+    [DataRow("Schenker Technologies GmbH", ManufacturerId.Schenker)]
+    [DataRow("XMG", ManufacturerId.Xmg)]
+    [DataRow("XMG GmbH", ManufacturerId.Xmg)]
     [DataRow("Other Vendor", ManufacturerId.Unsupported)]
     [DataRow(null, ManufacturerId.Unsupported)]
     public void Resolve_MapsKnownManufacturers(

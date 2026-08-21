@@ -32,6 +32,16 @@ public static class ManufacturerResolver
             return ManufacturerId.Acer;
         }
 
+        if (value.Contains("SCHENKER", StringComparison.OrdinalIgnoreCase))
+        {
+            return ManufacturerId.Schenker;
+        }
+
+        if (value.Contains("XMG", StringComparison.OrdinalIgnoreCase))
+        {
+            return ManufacturerId.Xmg;
+        }
+
         return ManufacturerId.Unsupported;
     }
 }

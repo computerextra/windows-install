@@ -6,5 +6,7 @@ public enum ManufacturerId
     Wortmann = 1,
     Lenovo = 2,
     Asus = 3,
-    Acer = 4
+    Acer = 4,
+    Schenker = 5,
+    Xmg = 6
 }

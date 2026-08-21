@@ -126,7 +126,8 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Falls Komponenten kompiliert werden, müssen die ausführbaren Artefakte reproduzierbar über GitHub Actions gebaut werden; das Zielsystem benötigt keine lokale Entwicklungs- oder Build-Umgebung.
 - Die Herstellerintegration muss über eine erweiterbare Abstraktion erfolgen. Der zentrale Workflow darf nicht fest auf einzelne Hersteller verdrahtet werden.
 - Wortmann wird als erster Hersteller vollständig implementiert und praktisch getestet.
-- Nach Wortmann sind Lenovo, Asus und Acer als weitere Hersteller vorgesehen und müssen später als zusätzliche Implementierungen derselben Herstellerabstraktion ergänzt werden können.
+- Nach Wortmann sind Lenovo, Asus, Acer, Schenker und XMG als weitere Hersteller vorgesehen und müssen später als zusätzliche Implementierungen derselben Herstellerabstraktion ergänzt werden können.
+- Schenker und XMG bleiben getrennte Herstellerkennungen, verwenden für die spätere Treiberintegration jedoch gemeinsam das offizielle Downloadportal `https://download.schenker-tech.de/`. Gerätezuordnung, Downloadmechanismus und Installationsworkflow werden vor der produktiven Implementierung anhand aktueller Primärquellen und realer Geräte separat verifiziert.
 - Die Wortmann-Unterstützung ist geräteklassenunabhängig auszulegen: Notebook, Desktop-PC, Tablet und All-in-One müssen über denselben generischen Herstellerworkflow unterstützt werden.
 - Die Treiberermittlung für Wortmann erfolgt anhand der vom Hersteller im System hinterlegten Seriennummer. Gerätemodell oder Geräteklasse dürfen nicht als primärer Schlüssel für die Treibersuche vorausgesetzt werden.
 - Der verifizierte Wortmann-Mechanismus verwendet `https://www.wortmann.de/de-de/systeminformation/{SERIAL}.aspx`, wobei `{SERIAL}` die aus SMBIOS gelesene Geräteseriennummer ist.
@@ -141,8 +142,8 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Die produktive Systemidentität wird über `ISystemIdentityReader` gekapselt. Die Windows-Implementierung liegt getrennt vom Core im Projekt `WindowsInstall.Windows` und liest ausschließlich read-only über Windows PowerShell/CIM.
 - Für die Systemidentität werden `Win32_ComputerSystem` für Computername, Hersteller, Modell, `PCSystemType` und `PCSystemTypeEx` sowie `Win32_BIOS.SerialNumber` für die SMBIOS-Seriennummer verwendet.
 - `SystemIdentity` enthält zusätzlich eine abstrahierte `DeviceClass`. `PCSystemTypeEx = 8` wird als Tablet behandelt; Desktop, Mobile, Workstation und Appliance werden über die dokumentierten Windows-Werte abgebildet, unbekannte Werte bleiben `Unknown`.
-- Hersteller werden zentral über `ManufacturerResolver` auf `Wortmann`, `Lenovo`, `Asus`, `Acer` oder `Unsupported` normalisiert. Herstellerabhängige Funktionen werden ausschließlich über `IManufacturerIntegration` und `ManufacturerIntegrationResolver` angebunden; der zentrale Workflow bleibt herstellerneutral.
-- Die Herstellerabstraktion ist automatisiert mit Wortmann-, Lenovo-, Asus-, Acer- und unbekannten Hersteller-Fixtures getestet. Auf realer Wortmann-Hardware wurden Computername, Hersteller, Modell, SMBIOS-Seriennummer und Geräteklasse erfolgreich read-only ermittelt und Wortmann korrekt erkannt.
+- Hersteller werden zentral über `ManufacturerResolver` auf `Wortmann`, `Lenovo`, `Asus`, `Acer`, `Schenker`, `Xmg` oder `Unsupported` normalisiert. Herstellerabhängige Funktionen werden ausschließlich über `IManufacturerIntegration` und `ManufacturerIntegrationResolver` angebunden; der zentrale Workflow bleibt herstellerneutral.
+- Die Herstellerabstraktion ist automatisiert mit Wortmann-, Lenovo-, Asus-, Acer-, Schenker-, XMG- und unbekannten Hersteller-Fixtures getestet. Auf realer Wortmann-Hardware wurden Computername, Hersteller, Modell, SMBIOS-Seriennummer und Geräteklasse erfolgreich read-only ermittelt und Wortmann korrekt erkannt.
 - Für die erste Implementierungsbasis wird C# auf .NET 10 verwendet; die GUI wird mit WPF umgesetzt.
 - Lokale Entwicklung erfolgt mit .NET SDK 10.0.400 oder einem kompatiblen Patch derselben Feature-Band gemäß `global.json`.
 - MSTest.Sdk 4.1.0 ist die initiale Testplattform.
@@ -256,7 +257,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - Wortmann-Systeme werden unabhängig von der Geräteklasse eindeutig erkannt.
 - Notebook, Desktop-PC, Tablet und All-in-One durchlaufen dieselbe Herstellerabstraktion.
 - Benötigte Identifikatoren werden korrekt ausgelesen.
-- Die Herstellerabstraktion lässt sich in automatisierten Tests mit Wortmann-, Lenovo-, Asus-, Acer- und unbekannten Hersteller-Fixtures prüfen, auch wenn zunächst nur Wortmann produktiv implementiert ist.
+- Die Herstellerabstraktion lässt sich in automatisierten Tests mit Wortmann-, Lenovo-, Asus-, Acer-, Schenker-, XMG- und unbekannten Hersteller-Fixtures prüfen, auch wenn zunächst nur Wortmann produktiv implementiert ist.
 - Nicht unterstützte Systeme führen zu einer verständlichen Meldung statt zu falschen Treiberaktionen.
 
 ## 4.3 Wortmann-Treiberworkflow
