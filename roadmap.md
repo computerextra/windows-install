@@ -134,6 +134,11 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - `SetupSnapshot` trennt Systemidentität, optionale vorhandene OEM-Gerätenummer und erkannte unterstützte Software.
 - Für Software gilt: `IsInstalled` beschreibt ausschließlich den erkannten realen Systemzustand; `IsSelectedByDefault` beschreibt die initiale GUI-Auswahl. Bereits installierte unterstützte Software wird unabhängig von den Erststart-Defaults automatisch ausgewählt dargestellt.
 - Die produktiven Windows-Quellen für Systemidentität, OEM-Gerätenummer und installierte Software werden in einer separaten read-only Infrastruktur implementiert und vor Verwendung anhand aktueller Primärquellen sowie auf realer Hardware verifiziert.
+- Die produktive Systemidentität wird über `ISystemIdentityReader` gekapselt. Die Windows-Implementierung liegt getrennt vom Core im Projekt `WindowsInstall.Windows` und liest ausschließlich read-only über Windows PowerShell/CIM.
+- Für die Systemidentität werden `Win32_ComputerSystem` für Computername, Hersteller, Modell, `PCSystemType` und `PCSystemTypeEx` sowie `Win32_BIOS.SerialNumber` für die SMBIOS-Seriennummer verwendet.
+- `SystemIdentity` enthält zusätzlich eine abstrahierte `DeviceClass`. `PCSystemTypeEx = 8` wird als Tablet behandelt; Desktop, Mobile, Workstation und Appliance werden über die dokumentierten Windows-Werte abgebildet, unbekannte Werte bleiben `Unknown`.
+- Hersteller werden zentral über `ManufacturerResolver` auf `Wortmann`, `Lenovo`, `Asus`, `Acer` oder `Unsupported` normalisiert. Herstellerabhängige Funktionen werden ausschließlich über `IManufacturerIntegration` und `ManufacturerIntegrationResolver` angebunden; der zentrale Workflow bleibt herstellerneutral.
+- Die Herstellerabstraktion ist automatisiert mit Wortmann-, Lenovo-, Asus-, Acer- und unbekannten Hersteller-Fixtures getestet. Auf realer Wortmann-Hardware wurden Computername, Hersteller, Modell, SMBIOS-Seriennummer und Geräteklasse erfolgreich read-only ermittelt und Wortmann korrekt erkannt.
 - Für die erste Implementierungsbasis wird C# auf .NET 10 verwendet; die GUI wird mit WPF umgesetzt.
 - Lokale Entwicklung erfolgt mit .NET SDK 10.0.400 oder einem kompatiblen Patch derselben Feature-Band gemäß `global.json`.
 - MSTest.Sdk 4.1.0 ist die initiale Testplattform.
@@ -236,10 +241,10 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 ## 4.2 Systemerkennung und Herstellerabstraktion
 
-- [ ] Hersteller, Modell, Geräteklasse und relevante Geräteidentifikatoren zuverlässig ermitteln.
-- [ ] Herstellerabstraktion so anlegen, dass Wortmann zuerst implementiert und Lenovo, Asus sowie Acer später ohne Änderung des zentralen Workflows ergänzt werden können.
-- [ ] Herstellerabhängige Logik hinter klaren Schnittstellen kapseln und mit Test-Doubles automatisiert testbar machen.
-- [ ] Verhalten für nicht unterstützte Hersteller definieren.
+- [x] Hersteller, Modell, Geräteklasse und relevante Geräteidentifikatoren zuverlässig ermitteln.
+- [x] Herstellerabstraktion so anlegen, dass Wortmann zuerst implementiert und Lenovo, Asus sowie Acer später ohne Änderung des zentralen Workflows ergänzt werden können.
+- [x] Herstellerabhängige Logik hinter klaren Schnittstellen kapseln und mit Test-Doubles automatisiert testbar machen.
+- [x] Verhalten für nicht unterstützte Hersteller definieren.
 
 ### Akzeptanzkriterien
 

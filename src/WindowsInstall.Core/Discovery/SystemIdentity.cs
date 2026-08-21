@@ -4,13 +4,15 @@ public sealed record SystemIdentity(
     string ComputerName,
     string? Manufacturer,
     string? Model,
-    string? DeviceSerialNumber)
+    string? DeviceSerialNumber,
+    DeviceClass DeviceClass)
 {
     public static SystemIdentity Create(
         string computerName,
         string? manufacturer,
         string? model,
-        string? deviceSerialNumber)
+        string? deviceSerialNumber,
+        DeviceClass deviceClass = DeviceClass.Unknown)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(computerName);
 
@@ -18,7 +20,8 @@ public sealed record SystemIdentity(
             computerName.Trim(),
             NormalizeOptional(manufacturer),
             NormalizeOptional(model),
-            NormalizeOptional(deviceSerialNumber));
+            NormalizeOptional(deviceSerialNumber),
+            deviceClass);
     }
 
     private static string? NormalizeOptional(string? value)
