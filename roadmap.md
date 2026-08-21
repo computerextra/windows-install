@@ -170,6 +170,11 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Der Windows-Fortsetzungsmechanismus verwendet Task Scheduler über `schtasks.exe` mit einem interaktiven `ONLOGON`-Trigger und höchster Ausführungsstufe. Der Task heißt `ComputerExtra\WindowsInstall.Resume`.
 - Die für Resume benötigte EXE wird vor dem Neustart stabil unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume\WindowsInstall.exe` bereitgestellt; der Scheduled Task startet diese mit `--resume`.
 - Der `--resume`-App-Entry-Point lädt den gespeicherten State über `JsonFileSetupStateStore`, entfernt die Resume-Registrierung nach erfolgreicher Wiederaufnahme und stellt exakt den fortzusetzenden `CurrentStep` im laufenden App-Kontext bereit.
+- Persistente Workflow-Marker werden über `IWorkflowMarkerStore` gekapselt. Die produktive JSON-Implementierung verwendet genau die projektspezifische Datei `C:\ComputerExtra.WindowsInstall.marker.json`; das Dokument und jeder gerätegebundene Marker sind versioniert.
+- Die Markerdatei wird nach erfolgreichem Schreiben mit dem Windows-Dateiattribut `Hidden` versehen. Schreibzugriffe unterliegen derselben expliziten Systemmutationsgrenze wie andere persistente Änderungen.
+- `WorkflowMarkerStatus` berücksichtigt ausschließlich Marker mit unterstützter Schema-Version und passendem Hersteller sowie passender Geräteseriennummer. Für dieselbe Workflow-ID wird der zeitlich neueste gültige Marker verwendet.
+- Persistente Marker und flüchtige Laufzeitdaten sind strikt getrennt: Marker liegen ausschließlich direkt unter `C:\`, Resume-State, Resume-EXE und Resume-Log dagegen unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume`.
+- Für Self-Cleanup existiert eine testbare Grundlage: Resume-State kann gelöscht und das aktuell laufende Runtime-Verzeichnis nach Prozessende über einen getrennten PowerShell-Prozess entfernt werden. Der 4.1-Self-Cleanup-Punkt bleibt offen, bis dieser Mechanismus in den erfolgreichen App-Abschluss integriert und dort praktisch end-to-end getestet wurde.
 
 ## Noch nicht entschieden
 
@@ -204,9 +209,9 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [x] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
 - [x] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
 - [x] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
-- [ ] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
-- [ ] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
-- [ ] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
+- [x] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
+- [x] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
+- [x] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
 - [ ] Self-Cleanup-Modell entwerfen und implementieren, das nach erfolgreichem Abschluss Anwendung, Bootstrap, Downloads, Logs, Resume-State, temporäre Verzeichnisse und sonstige WindowsInstall-Laufzeitartefakte vollständig entfernt.
 - [ ] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
 
