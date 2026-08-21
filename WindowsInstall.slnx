@@ -8,6 +8,7 @@
     <Project Path="tests/WindowsInstall.Cleanup.Integration/WindowsInstall.Cleanup.Integration.csproj" />
     <Project Path="tests/WindowsInstall.Core.Tests/WindowsInstall.Core.Tests.csproj" />
     <Project Path="tests/WindowsInstall.Discovery.Integration/WindowsInstall.Discovery.Integration.csproj" />
+    <Project Path="tests/WindowsInstall.Windows.Tests/WindowsInstall.Windows.Tests.csproj" />
     <Project Path="tests/WindowsInstall.Wortmann.Integration/WindowsInstall.Wortmann.Integration.csproj" />
   </Folder>
 </Solution>
