@@ -30,21 +30,46 @@ public sealed class SetupRunStateTests
     }
 
     [TestMethod]
-    public void RebootLifecycle_CanBeRequestedAndCleared()
+    public void RebootLifecycle_PreservesCurrentStepUntilResume()
+    {
+        var state = new SetupRunState();
+        state.BeginStep(WorkflowStepId.DriverInstallation);
+
+        state.RequestReboot();
+
+        Assert.IsTrue(state.PendingReboot);
+        Assert.AreEqual(WorkflowStepId.DriverInstallation, state.CurrentStep);
+
+        state.ClearPendingReboot();
+
+        Assert.IsFalse(state.PendingReboot);
+        Assert.AreEqual(WorkflowStepId.DriverInstallation, state.CurrentStep);
+    }
+
+    [TestMethod]
+    public void RequestReboot_RejectsMissingActiveStep()
     {
         var state = new SetupRunState();
 
-        state.RequestReboot();
-        Assert.IsTrue(state.PendingReboot);
+        Assert.ThrowsExactly<InvalidOperationException>(
+            state.RequestReboot);
+    }
 
-        state.ClearPendingReboot();
-        Assert.IsFalse(state.PendingReboot);
+    [TestMethod]
+    public void ClearPendingReboot_RejectsMissingPendingReboot()
+    {
+        var state = new SetupRunState();
+        state.BeginStep(WorkflowStepId.DriverInstallation);
+
+        Assert.ThrowsExactly<InvalidOperationException>(
+            state.ClearPendingReboot);
     }
 
     [TestMethod]
     public void MarkRunCompleted_RejectsPendingReboot()
     {
         var state = new SetupRunState();
+        state.BeginStep(WorkflowStepId.Finalization);
         state.RequestReboot();
 
         Assert.ThrowsExactly<InvalidOperationException>(

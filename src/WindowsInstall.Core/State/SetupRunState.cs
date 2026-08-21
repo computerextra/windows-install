@@ -46,11 +46,26 @@ public sealed class SetupRunState
     public void RequestReboot()
     {
         EnsureRunIsActive();
+
+        if (CurrentStep is null)
+        {
+            throw new InvalidOperationException(
+                "Ein Neustart kann nur für einen aktiven Workflow-Schritt angefordert werden.");
+        }
+
         PendingReboot = true;
     }
 
     public void ClearPendingReboot()
     {
+        EnsureRunIsActive();
+
+        if (!PendingReboot)
+        {
+            throw new InvalidOperationException(
+                "Es steht kein Neustart zur Fortsetzung aus.");
+        }
+
         PendingReboot = false;
     }
 
