@@ -29,3 +29,20 @@ jobs:
 
       - name: Test
         run: dotnet test WindowsInstall.slnx --configuration Release --no-build
+
+      - name: Bootstrap smoke test
+        shell: powershell
+        run: |
+          $fixtureDirectory = Join-Path $env:RUNNER_TEMP 'WindowsInstallBootstrapFixture'
+          New-Item -ItemType Directory -Path $fixtureDirectory -Force | Out-Null
+
+          $fixtureAsset = Join-Path $fixtureDirectory 'fixture.exe'
+          $fixtureChecksum = Join-Path $fixtureDirectory 'fixture.exe.sha256'
+          [System.IO.File]::WriteAllText($fixtureAsset, 'bootstrap-smoke-test')
+          $hash = (Get-FileHash -LiteralPath $fixtureAsset -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText($fixtureChecksum, "$hash  fixture.exe`n")
+
+          $assetUri = [Uri]$fixtureAsset
+          $checksumUri = [Uri]$fixtureChecksum
+
+          & .\bootstrap.ps1 -AssetUri $assetUri -ChecksumUri $checksumUri -NoLaunch
