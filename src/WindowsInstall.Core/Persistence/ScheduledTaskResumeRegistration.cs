@@ -10,6 +10,17 @@ public sealed class ScheduledTaskResumeRegistration(
 {
     public const string TaskName = @"ComputerExtra\WindowsInstall.Resume";
 
+    public ScheduledTaskResumeRegistration(
+        IProcessRunner processRunner,
+        ISystemMutationGuard mutationGuard,
+        ResumeRuntimeLayout runtimeLayout)
+        : this(
+            processRunner,
+            mutationGuard,
+            ResumeLaunchCommand.Create(runtimeLayout.ExecutablePath))
+    {
+    }
+
     public async ValueTask RegisterAsync(
         CancellationToken cancellationToken = default)
     {
