@@ -174,7 +174,9 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Die Markerdatei wird nach erfolgreichem Schreiben mit dem Windows-Dateiattribut `Hidden` versehen. Schreibzugriffe unterliegen derselben expliziten Systemmutationsgrenze wie andere persistente Änderungen.
 - `WorkflowMarkerStatus` berücksichtigt ausschließlich Marker mit unterstützter Schema-Version und passendem Hersteller sowie passender Geräteseriennummer. Für dieselbe Workflow-ID wird der zeitlich neueste gültige Marker verwendet.
 - Persistente Marker und flüchtige Laufzeitdaten sind strikt getrennt: Marker liegen ausschließlich direkt unter `C:\`, Resume-State, Resume-EXE und Resume-Log dagegen unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume`.
-- Für Self-Cleanup existiert eine testbare Grundlage: Resume-State kann gelöscht und das aktuell laufende Runtime-Verzeichnis nach Prozessende über einen getrennten PowerShell-Prozess entfernt werden. Der 4.1-Self-Cleanup-Punkt bleibt offen, bis dieser Mechanismus in den erfolgreichen App-Abschluss integriert und dort praktisch end-to-end getestet wurde.
+- Der erfolgreiche Workflow-Abschluss wird zentral über `SetupRunCompletionCoordinator` orchestriert. Erst wenn der Run ohne aktiven Schritt und ohne ausstehenden Neustart erfolgreich abgeschlossen werden kann, werden Abschluss-State gespeichert, Resume-Registrierung entfernt, Resume-State gelöscht und die Runtime-Selbstlöschung vorbereitet.
+- Self-Cleanup verwendet `RuntimeSelfCleanupService` und einen getrennten, versteckten PowerShell-Prozess, der auf das Ende des aktuellen WindowsInstall-Prozesses wartet und anschließend das komplette Resume-Runtime-Verzeichnis rekursiv entfernt. Fehler- und Abbruchpfade lösen diesen Cleanup nicht aus.
+- Der Self-Cleanup wurde end-to-end mit produktivem `JsonFileSetupStateStore`, produktivem detached Process-Starter und realem Dateisystem praktisch getestet; nach Prozessende wurde das vollständige Test-Runtime-Verzeichnis entfernt. Der Scheduled-Task-Mechanismus wurde separat bereits praktisch mit Windows Task Scheduler verifiziert.
 
 ## Noch nicht entschieden
 
@@ -212,7 +214,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [x] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
 - [x] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
 - [x] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
-- [ ] Self-Cleanup-Modell entwerfen und implementieren, das nach erfolgreichem Abschluss Anwendung, Bootstrap, Downloads, Logs, Resume-State, temporäre Verzeichnisse und sonstige WindowsInstall-Laufzeitartefakte vollständig entfernt.
+- [x] Self-Cleanup-Modell entwerfen und implementieren, das nach erfolgreichem Abschluss Anwendung, Bootstrap, Downloads, Logs, Resume-State, temporäre Verzeichnisse und sonstige WindowsInstall-Laufzeitartefakte vollständig entfernt.
 - [ ] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
 
 ### Akzeptanzkriterien
