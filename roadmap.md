@@ -173,6 +173,8 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Persistente Workflow-Marker werden über `IWorkflowMarkerStore` gekapselt. Die produktive JSON-Implementierung verwendet genau die projektspezifische Datei `C:\ComputerExtra.WindowsInstall.marker.json`; das Dokument und jeder gerätegebundene Marker sind versioniert.
 - Die Markerdatei wird nach erfolgreichem Schreiben mit dem Windows-Dateiattribut `Hidden` versehen. Schreibzugriffe unterliegen derselben expliziten Systemmutationsgrenze wie andere persistente Änderungen.
 - `WorkflowMarkerStatus` berücksichtigt ausschließlich Marker mit unterstützter Schema-Version und passendem Hersteller sowie passender Geräteseriennummer. Für dieselbe Workflow-ID wird der zeitlich neueste gültige Marker verwendet.
+- Der Abgleich zwischen Workflow-Markern und real erkanntem Systemzustand folgt einer festen Prioritätsregel über `WorkflowCompletionResolver`: ein real bestätigter Zustand gilt als erledigt, ein real erkannter Widerspruch macht einen Marker wirkungslos, und nur wenn der reale Zustand technisch nicht zuverlässig prüfbar ist, darf ein gültiger gerätegebundener Marker als Abschlussnachweis dienen.
+- Ein veralteter oder gerätefremder Marker darf dadurch niemals einen zuverlässig erkannten realen Gegenbeweis überstimmen. Die konkrete Ermittlung des realen Zustands bleibt Aufgabe der jeweiligen Discovery-/Infrastrukturimplementierung in den nachgelagerten Arbeitspaketen.
 - Persistente Marker und flüchtige Laufzeitdaten sind strikt getrennt: Marker liegen ausschließlich direkt unter `C:\`, Resume-State, Resume-EXE und Resume-Log dagegen unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume`.
 - Der erfolgreiche Workflow-Abschluss wird zentral über `SetupRunCompletionCoordinator` orchestriert. Erst wenn der Run ohne aktiven Schritt und ohne ausstehenden Neustart erfolgreich abgeschlossen werden kann, werden Abschluss-State gespeichert, Resume-Registrierung entfernt, Resume-State gelöscht und die Runtime-Selbstlöschung vorbereitet.
 - Self-Cleanup verwendet `RuntimeSelfCleanupService` und einen getrennten, versteckten PowerShell-Prozess, der auf das Ende des aktuellen WindowsInstall-Prozesses wartet und anschließend das komplette Resume-Runtime-Verzeichnis rekursiv entfernt. Fehler- und Abbruchpfade lösen diesen Cleanup nicht aus.
@@ -215,7 +217,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [x] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
 - [x] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
 - [x] Self-Cleanup-Modell entwerfen und implementieren, das nach erfolgreichem Abschluss Anwendung, Bootstrap, Downloads, Logs, Resume-State, temporäre Verzeichnisse und sonstige WindowsInstall-Laufzeitartefakte vollständig entfernt.
-- [ ] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
+- [x] Regeln definieren, wie Marker mit real erkanntem Systemzustand abgeglichen werden, damit veraltete Marker keine falschen Aussagen über installierte Software oder sichtbare Konfiguration erzeugen.
 
 ### Akzeptanzkriterien
 
