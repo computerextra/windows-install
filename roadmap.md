@@ -163,6 +163,7 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Die WPF-Anwendung wird für das Zielsystem als self-contained .NET-10-Single-File-Artefakt veröffentlicht; auf dem Zielsystem ist dadurch keine lokale .NET-Runtime oder Build-Umgebung erforderlich.
 - GitHub Actions ist der verbindliche Build- und Release-Weg: CI prüft Restore, Build, automatisierte Tests und den Bootstrap-Smoke-Test; Tags nach dem Schema `v*` erzeugen das geprüfte Release-Artefakt samt SHA-256-Datei.
 - Unterstützte Zielumgebung für den aktuellen Bootstrap ist Windows 11 Client auf x64. Windows-Version und Produkttyp werden über `Win32_OperatingSystem`, die Prozessorarchitektur über `Win32_Processor` ermittelt. Windows 10, Windows Server und nicht-x64-Systeme werden vor Download und Start kontrolliert abgewiesen.
+- Der Bootstrap protokolliert Laufzeit- und Fehlerdiagnosen mit ISO-8601-Zeitstempel und Level in `WindowsInstall.log` innerhalb seines temporären Runtime-Verzeichnisses. Erfolgreiche Läufe entfernen Runtime-Verzeichnis und Log vollständig; bei Fehlern bleibt das Diagnoseverzeichnis samt Log erhalten und der Pfad wird ausdrücklich ausgegeben. Der Log-Pfad wird der gestarteten Anwendung über `WINDOWSINSTALL_LOG_PATH` bereitgestellt, damit spätere Komponenten denselben Lauf protokollieren können.
 
 ## Noch nicht entschieden
 
@@ -195,7 +196,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [x] Download-/Startmechanismus so gestalten, dass kein vorheriges Klonen oder manuelles Herunterladen des Repositorys erforderlich ist.
 - [x] Falls kompilierte Komponenten eingesetzt werden, GitHub-Actions-Workflow für reproduzierbare Builds und die Bereitstellung der benötigten Artefakte definieren und implementieren.
 - [x] Voraussetzungen und unterstützte Ausführungsumgebung erkennen und validieren.
-- [ ] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
+- [x] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
 - [ ] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
 - [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
 - [ ] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
