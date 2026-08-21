@@ -134,6 +134,9 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Treiber werden aus der Wortmann-Systeminformation semantisch anhand der Tabellenwerte ausgewählt: nur Zeilen mit `Typ = Treiber` und expliziter Unterstützung für `Windows 11 - 64 Bit` werden berücksichtigt. Download-URLs müssen zusätzlich auf `https://webftp.wortmann.de/dokumentenmanagement_wag/` liegen.
 - Der Wortmann-Betriebssystemfilter der Website wird nicht technisch nachgebildet: der ASP.NET-Postback setzt zwar die Auswahl, entfernt aber ungeeignete Einträge nicht aus dem gelieferten HTML. Die fachlich relevanten Betriebssystemwerte stehen bereits pro Tabellenzeile im HTML und werden direkt ausgewertet.
 - Die Wortmann-Treiberermittlung wurde auf realer Wortmann-Hardware mit SMBIOS-Seriennummer `R7993106` praktisch geprüft. Dabei wurden aus 19 vorhandenen Download-Assets exakt 10 als Windows-11-Treiber erkannt; Windows-10-only-Treiber, Handbücher, Armoury Crate und Windows-Recovery-Medien wurden ausgeschlossen.
+- Treiberdownloads sind über `IDriverPackageDownloader` abstrahiert; die produktive Windows-Implementierung `HttpDriverPackageDownloader` akzeptiert ausschließlich HTTPS, schreibt in einen expliziten temporären Zielpfad und behandelt HTTP- sowie leere Downloadfehler kontrolliert.
+- ZIP-Treiberpakete werden vor Verwendung über `IDriverArchiveValidator` validiert und anschließend über `IDriverArchiveExtractor` in einen separaten temporären Pfad entpackt. Download, Validierung und Extraktion bleiben damit von der späteren Installation getrennt und automatisiert testbar.
+- Der Download-/Validierungsweg wurde auf realer Wortmann-Hardware praktisch mit dem über die Seriennummer ermittelten Intel-Chipsatzpaket geprüft: 7.872.289 Bytes wurden über den produktiven Downloader geladen, als ZIP validiert, vollständig entpackt und 396 INF-Dateien gefunden. Der Integrationstest entfernt seine temporären Probe-Artefakte anschließend wieder vollständig.
 - Neue Logik wird grundsätzlich testbar entworfen; Hardware-, Netzwerk-, Prozess-, Registry-, WMI/CIM- und ähnliche Systemzugriffe werden so gekapselt, dass die fachliche Logik automatisiert getestet werden kann.
 - Die GUI erhält ihren initialen Ist-Zustand über einen zentralen read-only `SetupSnapshot`; GUI-Code greift nicht direkt auf CIM/WMI, Registry oder andere Windows-Systemquellen zu.
 - `SetupSnapshot` trennt Systemidentität, optionale vorhandene OEM-Gerätenummer und erkannte unterstützte Software.
@@ -264,7 +267,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 - [x] Offiziellen aktuellen Wortmann-Mechanismus für Treibersuche und Download anhand von Primärquellen verifizieren.
 - [x] Treiber anhand der im System hinterlegten Seriennummer ermitteln.
-- [ ] Downloads reproduzierbar durchführen und validieren.
+- [x] Downloads reproduzierbar durchführen und validieren.
 - [ ] Treiberinstallation automatisieren.
 - [ ] Erforderliche Neustarts in das zentrale Fortsetzungsmodell integrieren.
 

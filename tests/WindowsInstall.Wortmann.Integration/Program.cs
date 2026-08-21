@@ -1,6 +1,8 @@
 using ComputerExtra.WindowsInstall.Core.Discovery;
+using ComputerExtra.WindowsInstall.Core.Drivers;
 using ComputerExtra.WindowsInstall.Core.Drivers.Wortmann;
 using ComputerExtra.WindowsInstall.Windows.Discovery;
+using ComputerExtra.WindowsInstall.Windows.Drivers;
 using ComputerExtra.WindowsInstall.Windows.Drivers.Wortmann;
 
 ISystemIdentityReader identityReader = new PowerShellCimSystemIdentityReader();
@@ -21,7 +23,7 @@ if (string.IsNullOrWhiteSpace(identity.DeviceSerialNumber))
 
 using var httpClient = new HttpClient
 {
-    Timeout = TimeSpan.FromSeconds(30)
+    Timeout = TimeSpan.FromMinutes(2)
 };
 
 IWortmannSystemInformationClient client =
@@ -40,4 +42,73 @@ foreach (var driver in drivers)
         $"{driver.Category}={driver.Asset.DownloadUri.AbsoluteUri}");
 }
 
-return drivers.Count > 0 ? 0 : 4;
+if (!args.Contains(
+    "--download-probe",
+    StringComparer.OrdinalIgnoreCase))
+{
+    return drivers.Count > 0 ? 0 : 4;
+}
+
+var chipset = drivers.SingleOrDefault(
+    driver => driver.Category == WortmannDriverCategory.Chipset);
+
+if (chipset is null)
+{
+    Console.Error.WriteLine("Kein Chipsatztreiber gefunden.");
+    return 5;
+}
+
+var probeRoot = Path.Combine(
+    Path.GetTempPath(),
+    $"ComputerExtra.WindowsInstall.DriverProbe.{Guid.NewGuid():N}");
+
+var downloadDirectory = Path.Combine(probeRoot, "download");
+var extractDirectory = Path.Combine(probeRoot, "extracted");
+
+try
+{
+    IDriverPackageDownloader downloader =
+        new HttpDriverPackageDownloader(httpClient);
+    IDriverArchiveValidator validator =
+        new ZipDriverArchiveValidator();
+    IDriverArchiveExtractor extractor =
+        new ZipDriverArchiveExtractor();
+
+    var download = await downloader.DownloadAsync(
+        chipset.Asset.DownloadUri,
+        downloadDirectory);
+
+    await validator.ValidateAsync(download.FilePath);
+
+    var extractedPath = await extractor.ExtractAsync(
+        download.FilePath,
+        extractDirectory);
+
+    var infFiles = Directory.GetFiles(
+        extractedPath,
+        "*.inf",
+        SearchOption.AllDirectories);
+
+    Console.WriteLine($"DownloadFile={download.FilePath}");
+    Console.WriteLine($"DownloadLength={download.Length}");
+    Console.WriteLine($"ExtractedPath={extractedPath}");
+    Console.WriteLine($"InfCount={infFiles.Length}");
+
+    if (infFiles.Length == 0)
+    {
+        Console.Error.WriteLine(
+            "Treiberarchiv enthält keine INF-Dateien.");
+        return 6;
+    }
+
+    return 0;
+}
+finally
+{
+    if (Directory.Exists(probeRoot))
+    {
+        Directory.Delete(
+            probeRoot,
+            recursive: true);
+    }
+}
