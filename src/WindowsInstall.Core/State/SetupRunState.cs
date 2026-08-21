@@ -16,6 +16,57 @@ public sealed class SetupRunState
 
     public IReadOnlySet<WorkflowStepId> CompletedSteps => _completedSteps;
 
+    public static SetupRunState Restore(
+        int schemaVersion,
+        WorkflowStepId? currentStep,
+        bool pendingReboot,
+        bool isCompleted,
+        IEnumerable<WorkflowStepId> completedSteps)
+    {
+        ArgumentNullException.ThrowIfNull(completedSteps);
+
+        if (schemaVersion != CurrentSchemaVersion)
+        {
+            throw new InvalidOperationException(
+                $"Nicht unterstützte Setup-State-Schema-Version: {schemaVersion}.");
+        }
+
+        var state = new SetupRunState();
+
+        foreach (var completedStep in completedSteps)
+        {
+            if (!state._completedSteps.Add(completedStep))
+            {
+                throw new InvalidOperationException(
+                    $"Workflow-Schritt '{completedStep}' ist im gespeicherten State doppelt vorhanden.");
+            }
+        }
+
+        if (currentStep is not null && state._completedSteps.Contains(currentStep.Value))
+        {
+            throw new InvalidOperationException(
+                $"Aktiver Workflow-Schritt '{currentStep}' ist bereits als abgeschlossen gespeichert.");
+        }
+
+        if (pendingReboot && currentStep is null)
+        {
+            throw new InvalidOperationException(
+                "Gespeicherter State enthält einen ausstehenden Neustart ohne aktiven Workflow-Schritt.");
+        }
+
+        if (isCompleted && (currentStep is not null || pendingReboot))
+        {
+            throw new InvalidOperationException(
+                "Abgeschlossener gespeicherter State darf weder aktiven Schritt noch ausstehenden Neustart enthalten.");
+        }
+
+        state.CurrentStep = currentStep;
+        state.PendingReboot = pendingReboot;
+        state.IsCompleted = isCompleted;
+
+        return state;
+    }
+
     public void BeginStep(WorkflowStepId step)
     {
         EnsureRunIsActive();
