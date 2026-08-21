@@ -14,8 +14,38 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-if ($env:OS -ne 'Windows_NT') {
-    throw 'WindowsInstall kann nur unter Windows ausgeführt werden.'
+$runtimeDirectory = Join-Path `
+    ([System.IO.Path]::GetTempPath()) `
+    ('ComputerExtra.WindowsInstall.{0}' -f [Guid]::NewGuid().ToString('N'))
+
+$logPath = Join-Path $runtimeDirectory 'WindowsInstall.log'
+$executablePath = Join-Path $runtimeDirectory 'WindowsInstall.exe'
+$checksumPath = Join-Path $runtimeDirectory 'WindowsInstall.exe.sha256'
+$previousBundleExtractBaseDirectory = $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR
+$previousLogPath = $env:WINDOWSINSTALL_LOG_PATH
+$runSucceeded = $false
+
+New-Item -ItemType Directory -Path $runtimeDirectory -Force | Out-Null
+
+function Write-WindowsInstallLog {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('INFO', 'ERROR')]
+        [string]$Level,
+
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    $line = '{0} [{1}] {2}' -f `
+        [DateTimeOffset]::Now.ToString('o'), `
+        $Level, `
+        $Message
+
+    Add-Content `
+        -LiteralPath $logPath `
+        -Value $line `
+        -Encoding UTF8
 }
 
 function Get-WindowsInstallEnvironment {
@@ -96,9 +126,6 @@ function Assert-WindowsInstallEnvironment {
     }
 }
 
-$windowsInstallEnvironment = Get-WindowsInstallEnvironment
-Assert-WindowsInstallEnvironment -Environment $windowsInstallEnvironment
-
 function Receive-File {
     param(
         [Parameter(Mandatory)]
@@ -107,6 +134,10 @@ function Receive-File {
         [Parameter(Mandatory)]
         [string]$DestinationPath
     )
+
+    Write-WindowsInstallLog `
+        -Level INFO `
+        -Message "Lade $SourceUri"
 
     if ($SourceUri.IsFile) {
         Copy-Item -LiteralPath $SourceUri.LocalPath -Destination $DestinationPath
@@ -124,16 +155,26 @@ function Receive-File {
         -TimeoutSec 120
 }
 
-$runtimeDirectory = Join-Path `
-    ([System.IO.Path]::GetTempPath()) `
-    ('ComputerExtra.WindowsInstall.{0}' -f [Guid]::NewGuid().ToString('N'))
-
-$executablePath = Join-Path $runtimeDirectory 'WindowsInstall.exe'
-$checksumPath = Join-Path $runtimeDirectory 'WindowsInstall.exe.sha256'
-$previousBundleExtractBaseDirectory = $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR
-
 try {
-    New-Item -ItemType Directory -Path $runtimeDirectory -Force | Out-Null
+    Write-WindowsInstallLog `
+        -Level INFO `
+        -Message 'WindowsInstall Bootstrap gestartet.'
+
+    if ($env:OS -ne 'Windows_NT') {
+        throw 'WindowsInstall kann nur unter Windows ausgeführt werden.'
+    }
+
+    $windowsInstallEnvironment = Get-WindowsInstallEnvironment
+    Assert-WindowsInstallEnvironment -Environment $windowsInstallEnvironment
+
+    Write-WindowsInstallLog `
+        -Level INFO `
+        -Message (
+            'Umgebung validiert: Version {0}, ProductType {1}, Architektur {2}.' -f `
+                $windowsInstallEnvironment.Version, `
+                $windowsInstallEnvironment.ProductType, `
+                ($windowsInstallEnvironment.ProcessorArchitectures -join ',')
+        )
 
     Receive-File -SourceUri $AssetUri -DestinationPath $executablePath
     Receive-File -SourceUri $ChecksumUri -DestinationPath $checksumPath
@@ -151,8 +192,17 @@ try {
         throw 'SHA-256-Prüfung des WindowsInstall-Artefakts fehlgeschlagen.'
     }
 
+    Write-WindowsInstallLog `
+        -Level INFO `
+        -Message 'SHA-256-Prüfung erfolgreich.'
+
     if (-not $NoLaunch) {
         $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR = $runtimeDirectory
+        $env:WINDOWSINSTALL_LOG_PATH = $logPath
+
+        Write-WindowsInstallLog `
+            -Level INFO `
+            -Message 'Starte WindowsInstall.'
 
         $process = Start-Process `
             -FilePath $executablePath `
@@ -162,12 +212,40 @@ try {
         if ($process.ExitCode -ne 0) {
             throw "WindowsInstall wurde mit Exitcode $($process.ExitCode) beendet."
         }
+
+        Write-WindowsInstallLog `
+            -Level INFO `
+            -Message 'WindowsInstall erfolgreich beendet.'
     }
+
+    $runSucceeded = $true
+}
+catch {
+    try {
+        Write-WindowsInstallLog `
+            -Level ERROR `
+            -Message $_.Exception.ToString()
+    }
+    catch {
+    }
+
+    Write-Error `
+        -Message (
+            'WindowsInstall fehlgeschlagen. ' +
+            "Fehlerlog: $logPath"
+        ) `
+        -ErrorAction Continue
+
+    throw
 }
 finally {
     $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR = $previousBundleExtractBaseDirectory
+    $env:WINDOWSINSTALL_LOG_PATH = $previousLogPath
 
-    if (Test-Path -LiteralPath $runtimeDirectory) {
+    if (
+        $runSucceeded -and
+        (Test-Path -LiteralPath $runtimeDirectory)
+    ) {
         Remove-Item -LiteralPath $runtimeDirectory -Recurse -Force
     }
 }

@@ -106,23 +106,36 @@ jobs:
             }
           }
 
+          function Remove-BootstrapRuntimeDirectories {
+            Get-ChildItem `
+              -LiteralPath ([System.IO.Path]::GetTempPath()) `
+              -Directory `
+              -Filter 'ComputerExtra.WindowsInstall.*' |
+                Remove-Item -Recurse -Force
+          }
+
+          Remove-BootstrapRuntimeDirectories
+
           Assert-BootstrapEnvironmentFails `
             -Version '10.0.19045.0' `
             -ProductType 1 `
             -Architecture 9 `
             -ExpectedMessage 'Windows 11 Client'
+          Remove-BootstrapRuntimeDirectories
 
           Assert-BootstrapEnvironmentFails `
             -Version '10.0.26100.0' `
             -ProductType 3 `
             -Architecture 9 `
             -ExpectedMessage 'Windows 11 Client'
+          Remove-BootstrapRuntimeDirectories
 
           Assert-BootstrapEnvironmentFails `
             -Version '10.0.26100.0' `
             -ProductType 1 `
             -Architecture 12 `
             -ExpectedMessage 'Windows 11 x64'
+          Remove-BootstrapRuntimeDirectories
 
           $global:WindowsInstallTestOperatingSystem = [PSCustomObject]@{
             Version = '10.0.26100.0'
@@ -134,7 +147,71 @@ jobs:
             }
           )
 
+          $badChecksum = Join-Path $fixtureDirectory 'fixture-bad.exe.sha256'
+          [System.IO.File]::WriteAllText(
+            $badChecksum,
+            "$(('0' * 64))  fixture.exe`n")
+
+          try {
+            & .\bootstrap.ps1 `
+              -AssetUri $assetUri `
+              -ChecksumUri ([Uri]$badChecksum) `
+              -NoLaunch
+
+            throw 'Bootstrap hat eine ungültige Prüfsumme akzeptiert.'
+          }
+          catch {
+            if (
+              $_.Exception.Message -notlike
+              '*SHA-256-Prüfung des WindowsInstall-Artefakts fehlgeschlagen*'
+            ) {
+              throw
+            }
+          }
+
+          $failedRuntimeDirectories = @(
+            Get-ChildItem `
+              -LiteralPath ([System.IO.Path]::GetTempPath()) `
+              -Directory `
+              -Filter 'ComputerExtra.WindowsInstall.*'
+          )
+
+          if ($failedRuntimeDirectories.Count -ne 1) {
+            throw 'Fehlerhafter Bootstrap-Lauf hat nicht genau ein Diagnoseverzeichnis hinterlassen.'
+          }
+
+          $failedLogPath = Join-Path `
+            $failedRuntimeDirectories[0].FullName `
+            'WindowsInstall.log'
+
+          if (-not (Test-Path -LiteralPath $failedLogPath)) {
+            throw 'Fehlerhafter Bootstrap-Lauf hat kein Fehlerlog hinterlassen.'
+          }
+
+          $failedLog = [System.IO.File]::ReadAllText($failedLogPath)
+
+          if (
+            $failedLog -notmatch '\[ERROR\]' -or
+            $failedLog -notlike
+              '*SHA-256-Prüfung des WindowsInstall-Artefakts fehlgeschlagen*'
+          ) {
+            throw 'Fehlerlog enthält nicht die erwarteten Diagnoseinformationen.'
+          }
+
+          Remove-BootstrapRuntimeDirectories
+
           & .\bootstrap.ps1 `
             -AssetUri $assetUri `
             -ChecksumUri $checksumUri `
             -NoLaunch
+
+          $successfulRuntimeDirectories = @(
+            Get-ChildItem `
+              -LiteralPath ([System.IO.Path]::GetTempPath()) `
+              -Directory `
+              -Filter 'ComputerExtra.WindowsInstall.*'
+          )
+
+          if ($successfulRuntimeDirectories.Count -ne 0) {
+            throw 'Erfolgreicher Bootstrap-Lauf hat temporäre Runtime-Verzeichnisse hinterlassen.'
+          }
