@@ -129,6 +129,10 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Nach Wortmann sind Lenovo, Asus und Acer als weitere Hersteller vorgesehen und müssen später als zusätzliche Implementierungen derselben Herstellerabstraktion ergänzt werden können.
 - Die Wortmann-Unterstützung ist geräteklassenunabhängig auszulegen: Notebook, Desktop-PC, Tablet und All-in-One müssen über denselben generischen Herstellerworkflow unterstützt werden.
 - Die Treiberermittlung für Wortmann erfolgt anhand der vom Hersteller im System hinterlegten Seriennummer. Gerätemodell oder Geräteklasse dürfen nicht als primärer Schlüssel für die Treibersuche vorausgesetzt werden.
+- Der verifizierte Wortmann-Mechanismus verwendet `https://www.wortmann.de/de-de/systeminformation/{SERIAL}.aspx`, wobei `{SERIAL}` die aus SMBIOS gelesene Geräteseriennummer ist.
+- Treiber werden aus der Wortmann-Systeminformation semantisch anhand der Tabellenwerte ausgewählt: nur Zeilen mit `Typ = Treiber` und expliziter Unterstützung für `Windows 11 - 64 Bit` werden berücksichtigt. Download-URLs müssen zusätzlich auf `https://webftp.wortmann.de/dokumentenmanagement_wag/` liegen.
+- Der Wortmann-Betriebssystemfilter der Website wird nicht technisch nachgebildet: der ASP.NET-Postback setzt zwar die Auswahl, entfernt aber ungeeignete Einträge nicht aus dem gelieferten HTML. Die fachlich relevanten Betriebssystemwerte stehen bereits pro Tabellenzeile im HTML und werden direkt ausgewertet.
+- Die Wortmann-Treiberermittlung wurde auf realer Wortmann-Hardware mit SMBIOS-Seriennummer `R7993106` praktisch geprüft. Dabei wurden aus 19 vorhandenen Download-Assets exakt 10 als Windows-11-Treiber erkannt; Windows-10-only-Treiber, Handbücher, Armoury Crate und Windows-Recovery-Medien wurden ausgeschlossen.
 - Neue Logik wird grundsätzlich testbar entworfen; Hardware-, Netzwerk-, Prozess-, Registry-, WMI/CIM- und ähnliche Systemzugriffe werden so gekapselt, dass die fachliche Logik automatisiert getestet werden kann.
 - Die GUI erhält ihren initialen Ist-Zustand über einen zentralen read-only `SetupSnapshot`; GUI-Code greift nicht direkt auf CIM/WMI, Registry oder andere Windows-Systemquellen zu.
 - `SetupSnapshot` trennt Systemidentität, optionale vorhandene OEM-Gerätenummer und erkannte unterstützte Software.
@@ -200,7 +204,8 @@ Die folgenden Punkte sind bewusst noch **keine** Architekturentscheidungen und m
 
 ## Verworfene Ansätze
 
-Noch keine dokumentiert.
+- Dateinamen- oder Pfadheuristiken als primäre Quelle für die Wortmann-Windows-Version werden nicht verwendet. Wortmann liefert den Typ und die unterstützten Betriebssysteme je Tabellenzeile explizit.
+- Der ASP.NET-Postback des Wortmann-Betriebssystemfilters wird nicht für die Treiberermittlung verwendet. Ein praktischer Test zeigte, dass `Windows 11 - 64 Bit` zwar als ausgewählt zurückgegeben wird, Windows-10-only-Einträge jedoch weiterhin im HTML enthalten bleiben.
 
 ---
 
@@ -256,8 +261,8 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 
 ## 4.3 Wortmann-Treiberworkflow
 
-- [ ] Offiziellen aktuellen Wortmann-Mechanismus für Treibersuche und Download anhand von Primärquellen verifizieren.
-- [ ] Treiber anhand der im System hinterlegten Seriennummer ermitteln.
+- [x] Offiziellen aktuellen Wortmann-Mechanismus für Treibersuche und Download anhand von Primärquellen verifizieren.
+- [x] Treiber anhand der im System hinterlegten Seriennummer ermitteln.
 - [ ] Downloads reproduzierbar durchführen und validieren.
 - [ ] Treiberinstallation automatisieren.
 - [ ] Erforderliche Neustarts in das zentrale Fortsetzungsmodell integrieren.
