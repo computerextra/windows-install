@@ -165,13 +165,17 @@ Hier werden nur Entscheidungen eingetragen, die tatsächlich getroffen und techn
 - Unterstützte Zielumgebung für den aktuellen Bootstrap ist Windows 11 Client auf x64. Windows-Version und Produkttyp werden über `Win32_OperatingSystem`, die Prozessorarchitektur über `Win32_Processor` ermittelt. Windows 10, Windows Server und nicht-x64-Systeme werden vor Download und Start kontrolliert abgewiesen.
 - Der Bootstrap protokolliert Laufzeit- und Fehlerdiagnosen mit ISO-8601-Zeitstempel und Level in `WindowsInstall.log` innerhalb seines temporären Runtime-Verzeichnisses. Erfolgreiche Läufe entfernen Runtime-Verzeichnis und Log vollständig; bei Fehlern bleibt das Diagnoseverzeichnis samt Log erhalten und der Pfad wird ausdrücklich ausgegeben. Der Log-Pfad wird der gestarteten Anwendung über `WINDOWSINSTALL_LOG_PATH` bereitgestellt, damit spätere Komponenten denselben Lauf protokollieren können.
 - Externe Windows-, Hardware- und Persistenzzugriffe werden im Core hinter schmalen Schnittstellen gekapselt. Bereits vorhanden sind insbesondere `ISystemDiscoveryService`, `ISetupStateStore`, `IWorkflowMarkerStore` und `ISystemMutationGuard`. Fachlogik wird gegen diese Abstraktionen getestet; produktive Windows-Implementierungen und Test-Doubles bleiben getrennt. Persistente Systemänderungen werden im lokalen Entwicklungsmodus durch `DevelopmentSystemMutationGuard` blockiert.
+- Die Fortsetzung nach Neustarts verwendet einen versionierten JSON-Resume-State über `ISetupStateStore`. Der produktive Dateispeicher liegt getrennt von persistenten Workflow-Markern unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume\resume-state.json`.
+- Vor einem erforderlichen Neustart bleibt der aktive `WorkflowStepId` im Resume-State erhalten und `PendingReboot` wird gesetzt. Beim Resume wird derselbe Schritt geladen, `PendingReboot` gelöscht und der aktualisierte State erneut gespeichert.
+- Der Windows-Fortsetzungsmechanismus verwendet Task Scheduler über `schtasks.exe` mit einem interaktiven `ONLOGON`-Trigger und höchster Ausführungsstufe. Der Task heißt `ComputerExtra\WindowsInstall.Resume`.
+- Die für Resume benötigte EXE wird vor dem Neustart stabil unter `%ProgramData%\ComputerExtra\WindowsInstall\Resume\WindowsInstall.exe` bereitgestellt; der Scheduled Task startet diese mit `--resume`.
+- Der `--resume`-App-Entry-Point lädt den gespeicherten State über `JsonFileSetupStateStore`, entfernt die Resume-Registrierung nach erfolgreicher Wiederaufnahme und stellt exakt den fortzusetzenden `CurrentStep` im laufenden App-Kontext bereit.
 
 ## Noch nicht entschieden
 
 Die folgenden Punkte sind bewusst noch **keine** Architekturentscheidungen und müssen vor Implementierung anhand der Anforderungen bzw. aktueller Primärquellen konkretisiert werden:
 
 - konkrete Implementierungssprache(n), Runtime(s) und GUI-Technologie
-- Persistenzmechanismus für die Fortsetzung nach Neustarts
 - Wortmann-Schnittstelle bzw. offizieller Mechanismus für Treibersuche und -download
 - Softwarequellen und Silent-Installationsparameter
 - Verfahren zur Temperaturmessung
@@ -199,7 +203,7 @@ Die Reihenfolge bildet die aktuellen Abhängigkeiten ab. `[x]` darf erst nach be
 - [x] Voraussetzungen und unterstützte Ausführungsumgebung erkennen und validieren.
 - [x] Logging- und Fehlerbehandlungsgrundlage festlegen und implementieren.
 - [x] Testarchitektur und Abstraktionen für externe Windows-/Hardwarezugriffe festlegen und implementieren.
-- [ ] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
+- [x] Zustandsmodell für einmalige Ausführung und Fortsetzung nach Neustart entwerfen, anhand aktueller Windows-Mechanismen verifizieren und implementieren.
 - [ ] Marker-/Statusmodell für bereits erfolgreich abgeschlossene Workflow-Schritte entwerfen, versionieren und testbar abstrahieren.
 - [ ] Markerdateien direkt unter `C:\` mit eindeutigem projektspezifischem Namensschema entwerfen und testbar abstrahieren.
 - [ ] Temporären Runtime-/Download-/Resume-Speicher so entwerfen, dass er vollständig von den persistenten Markerdateien getrennt ist.
